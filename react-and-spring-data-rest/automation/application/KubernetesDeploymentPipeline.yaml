@@ -1,0 +1,32 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: KubernetesManifest@0
+  displayName: 'Deploy Backend to Kubernetes'
+  inputs:
+    action: 'deploy'
+    kubernetesServiceConnection: 'myKubernetesConnection'
+    manifests: '$(System.DefaultWorkingDirectory)/automation/application/payroll-backend-manifest.yaml'
+    containers: 'backend'
+    imagePullSecrets: 'myImagePullSecret'
+    containerRegistryType: 'ContainerRegistry'
+    containerRegistry: 'myContainerRegistry'
+    containerRepository: 'backend'
+    containerTag: 'latest'
+
+- task: KubernetesManifest@0
+  displayName: 'Deploy Frontend to Kubernetes'
+  inputs:
+    action: 'deploy'
+    kubernetesServiceConnection: 'myKubernetesConnection'
+    manifests: '$(System.DefaultWorkingDirectory)//automation/application/payroll-fromtend-manifest.yaml'
+    containers: 'frontend'
+    imagePullSecrets: 'myImagePullSecret'
+    containerRegistryType: 'ContainerRegistry'
+    containerRegistry: 'myContainerRegistry'
+    containerRepository: 'frontend'
+    containerTag: 'latest'

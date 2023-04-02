@@ -1,0 +1,6 @@
+The backend pipeline builds the backend using Maven, then uses the Docker task to build a Docker image based on the Dockerfile in the backend directory, and push the resulting image to a container registry.
+
+Similarly, the frontend pipeline installs Node.js and npm, builds the frontend using npm, then uses the Docker task to build a Docker image based on the Dockerfile in the frontend directory, and push the resulting image to a container registry.
+
+
+The deployment pipeline deploys the backend and frontend to their respective containers inside Kubernetes using the KubernetesManifest task, and specifies the container image that needs to be used for each component using the containerRegistry, containerRepository and containerTag fields. The imagePullSecrets field specifies the Kubernetes secret that might be needed to pull the container images from the container registry.

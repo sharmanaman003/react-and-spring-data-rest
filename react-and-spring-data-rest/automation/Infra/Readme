@@ -1,0 +1,9 @@
+SUBSCRIPTION_ID=<your subscription id>
+RESOURCE_GROUP_NAME="aks-eus2-aksdays-demo-01"
+AKS_NAME="aks-eus2-aksdays-demo-01"
+LOCATION="east us 2"
+NODE_SIZE="Standard_B2s"
+DEPLOYMENT_NAME=$AKS_NAME–$RANDOM
+
+az account set –subscription $SUBSCRIPTION_ID
+az group create –name $RESOURCE_GROUP_NAME –location "$LOCATION"

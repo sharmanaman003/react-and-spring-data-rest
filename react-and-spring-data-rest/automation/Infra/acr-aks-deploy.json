@@ -1,0 +1,167 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Location for all resources."
+            }
+        },
+        "acrName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Azure Container Registry to create."
+            }
+        },
+        "clusterName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Azure Kubernetes Service cluster to create."
+            }
+        },
+        "postgresServerName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Azure Database for PostgreSQL server to create."
+            }
+        },
+        "postgresAdminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Administrator username for the Azure Database for PostgreSQL server."
+            }
+        },
+        "postgresAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Administrator password for the Azure Database for PostgreSQL server."
+            }
+        },
+        "postgresStorageMb": {
+            "type": "int",
+            "metadata": {
+                "description": "Storage capacity in MB for the Azure Database for PostgreSQL server."
+            }
+        },
+        "postgresSkuName": {
+            "type": "string",
+            "defaultValue": "GP_Gen5_2",
+            "metadata": {
+                "description": "Name of the SKU to use for the Azure Database for PostgreSQL server."
+            }
+        },
+        "postgresSkuTier": {
+            "type": "string",
+            "defaultValue": "GeneralPurpose",
+            "metadata": {
+                "description": "SKU tier for the Azure Database for PostgreSQL server."
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.ContainerRegistry/registries",
+            "apiVersion": "2019-05-01",
+            "name": "[variables('acrName')]",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "Standard",
+                "tier": "Standard"
+            },
+            "properties": {
+                "adminUserEnabled": false
+            },
+            "resources": [
+                {
+                    "type": "Microsoft.Insights/diagnosticSettings",
+                    "apiVersion": "2017-05-01-preview",
+                    "name": "[concat(variables('acrName'), '/Microsoft.Insights/', 'Log')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]"
+                    ],
+                    "properties": {
+                        "workspaceId": "[variables('workspaceId')]",
+                        "logs": [
+                            {
+                                "category": "AuditEvent",
+                                "enabled": true,
+                                "retentionPolicy": {
+                                    "enabled": true,
+                                    "days": 365
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.ContainerService/managedClusters",
+            "apiVersion": "2021-02-01",
+            "name": "[variables('aksName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]"
+            ],
+            "properties": {
+                "kubernetesVersion": "1.21.2",
+                "dnsPrefix": "[variables('aksName')]",
+                "enableRBAC": true,
+                "networkProfile": {
+                    "networkPlugin": "azure",
+                    "dnsServiceIp": "10.0.0.10",
+                    "serviceCidr": "10.0.0.0/16",
+                    "podCidr": "10.244.0.0/16"
+                },
+                "agentPoolProfiles": [
+                    {
+                        "name": "agentpool",
+                        "osDiskSizeGB": "[parameters('osDiskSizeGB')]",
+                        "count": 3,
+                        "enableAutoScaling": true,
+                        "minCount": 1,
+                        "maxCount": 3,
+                        "vmSize": "Standard_D2as_v4",
+                        "osType": "Linux",
+                        "storageProfile": "ManagedDisks",
+                        "type": "VirtualMachineScaleSets",
+                        "mode": "System",
+                        "maxPods": 110,
+                        "availabilityZones": [
+                            "1",
+                            "2",
+                            "3"
+                        ],
+                        "nodeTaints": [],
+                        "enableNodePublicIP": false,
+                        "tags": {}
+                    }
+                ],
+                "servicePrincipalProfile": {
+                    "clientId": "[variables('servicePrincipalClientId')]",
+                    "secret": "[variables('servicePrincipalClientSecret')]"
+                },
+                "addonProfiles": {
+                    "omsagent": {
+                        "enabled": true,
+                        "config": {
+                            "logAnalyticsWorkspaceResourceID": "[variables('logAnalyticsResourceId')]"
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "variables": {
+        "aksName": "myAKS",
+        "acrName": "myACR",
+        "agentCount": 3,
+        "agentVMSize": "Standard_DS2_v2",
+        "servicePrincipalClientId": "XXXXX",
+        "servicePrincipalClientSecret": "XXXXX",
+        "workspaceId": "XXXXX",
+        "logAnalyticsResourceId": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.OperationalInsights/workspaces/', variables('workspaceId'))]"
+    }
+}

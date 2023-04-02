@@ -1,0 +1,21 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: Maven@3
+  displayName: 'Build backend'
+  inputs:
+    mavenPomFile: 'backend/pom.xml'
+    goals: 'package'
+
+- task: Docker@2
+  displayName: 'Build and push Docker image'
+  inputs:
+    containerRegistry: 'myContainerRegistry'
+    repository: 'backend'
+    command: 'buildAndPush'
+    Dockerfile: 'backend/Dockerfile'
+    tags: 'latest'
